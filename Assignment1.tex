@@ -1,0 +1,168 @@
+\documentclass[11pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath, amssymb, amsthm}
+
+\title{\textbf{Assignment 1: Background\\Part I: Fun with Probabilities, Utilities, and RL}}
+\date{}
+
+\begin{document}
+
+\maketitle
+
+\section*{(a)}
+
+Let $F$ be the event that the fake coin is chosen, and $N$ be the event that a normal coin is chosen.
+\[
+P(F) = \frac{1}{n}, \quad P(N) = \frac{n-1}{n}
+\]
+
+\subsection*{(i)}
+
+Let $H_1$ be the event of observing 1 head in 1 flip:
+\[
+P(H_1 \mid F) = 1, \quad P(H_1 \mid N) = \frac{1}{2}
+\]
+Applying Bayes' Theorem:
+\begin{align*}
+P(F \mid H_1) &= \frac{P(H_1 \mid F) P(F)}{P(H_1 \mid F) P(F) + P(H_1 \mid N) P(N)} \\[1ex]
+&= \frac{1 \cdot \frac{1}{n}}{1 \cdot \frac{1}{n} + \frac{1}{2} \cdot \frac{n-1}{n}} \\[1ex]
+&= \frac{\frac{1}{n}}{\frac{2 + n - 1}{2n}} = \frac{2}{n+1}
+\end{align*}
+
+\subsection*{(ii)}
+
+Let $H_k$ be the event of observing $k$ heads in $k$ consecutive flips:
+\[
+P(H_k \mid F) = 1^k = 1, \quad P(H_k \mid N) = \left(\frac{1}{2}\right)^k
+\]
+Applying Bayes' Theorem:
+\begin{align*}
+P(F \mid H_k) &= \frac{P(H_k \mid F) P(F)}{P(H_k \mid F) P(F) + P(H_k \mid N) P(N)} \\[1ex]
+&= \frac{1 \cdot \frac{1}{n}}{1 \cdot \frac{1}{n} + \left(\frac{1}{2}\right)^k \cdot \frac{n-1}{n}} \\[1ex]
+&= \frac{\frac{1}{n}}{\frac{1}{n}\left(1 + \frac{n-1}{2^k}\right)} = \frac{2^k}{2^k + n - 1}
+\end{align*}
+
+\subsection*{(iii)}
+
+A false negative cannot occur because the fake coin has heads on both sides. An error occurs if and only if a normal coin is chosen and yields $k$ consecutive heads:
+\begin{align*}
+P(\text{Error}) &= P(N \cap H_k) \\[1ex]
+&= P(N) \cdot P(H_k \mid N) \\[1ex]
+&= \frac{n-1}{n} \cdot \left(\frac{1}{2}\right)^k = \frac{n-1}{n \cdot 2^k}
+\end{align*}
+
+\pagebreak
+
+\section*{(b)}
+
+Let $A, B, C$ denote the events that an ELT is manufactured by Altigauge, Bryant, and Chartair, respectively:
+\[
+P(A) = 0.80, \quad P(B) = 0.15, \quad P(C) = 0.05
+\]
+Let $D$ denote the event that an ELT is defective:
+\[
+P(D \mid A) = 0.04, \quad P(D \mid B) = 0.06, \quad P(D \mid C) = 0.09
+\]
+
+\subsection*{(i)}
+
+\[
+P(B) = 0.15
+\]
+
+\subsection*{(ii)}
+
+By Bayes' Theorem and the Law of Total Probability:
+\begin{align*}
+P(B \mid D) &= \frac{P(D \mid B) P(B)}{P(D \mid A) P(A) + P(D \mid B) P(B) + P(D \mid C) P(C)} \\[1ex]
+&= \frac{0.06 \cdot 0.15}{(0.04 \cdot 0.80) + (0.06 \cdot 0.15) + (0.09 \cdot 0.05)} \\[1ex]
+&= \frac{0.009}{0.032 + 0.009 + 0.0045} = \frac{0.009}{0.0455} = \frac{18}{91} \approx 0.1978
+\end{align*}
+
+---
+
+\section*{(c)}
+
+The Axiom of Substitutability states that if an agent prefers lottery $L_1$ to $L_2$ ($L_1 \succ L_2$), then for any probability $p \in (0, 1]$ and any third outcome $L_3$:
+\[
+[p, L_1; (1-p), L_3] \succ [p, L_2; (1-p), L_3]
+\]
+
+Let $L_3 = \$0$ with certainty and $p = 0.25$. We construct compound lotteries by mixing $A$ and $B$ with $L_3$:
+
+\begin{itemize}
+    \item \textbf{Mixing $B$ with $L_3$:} 
+    \[
+    [0.25, B; 0.75, \$0]
+    \]
+    Since $B = \$3000$ with $100\%$ probability, this yields:
+    \begin{align*}
+        25\% \times 100\% &= 25\% \text{ chance of } \$3000 \\
+        75\% \text{ chance of } \$0
+    \end{align*}
+    This compound lottery is equivalent to Lottery D.
+
+    \item \textbf{Mixing $A$ with $L_3$:}
+    \[
+    [0.25, A; 0.75, \$0]
+    \]
+    Since $A = [80\% \text{ chance of } \$4000, 20\% \text{ chance of } \$0]$, this yields:
+    \begin{align*}
+        25\% \times 80\% &= 20\% \text{ chance of } \$4000 \\
+        (25\% \times 20\%) + 75\% &= 80\% \text{ chance of } \$0
+    \end{align*}
+    This compound lottery is equivalent to Lottery C.
+\end{itemize}
+
+Assuming an agent prefers $B \succ A$, the Axiom of Substitutability requires that mixing both sides with $L_3 = \$0$ at $p = 0.25$ must preserve the preference order:
+\[
+[0.25, B; 0.75, \$0] \succ [0.25, A; 0.75, \$0] \implies D \succ C
+\]
+However, choices in the Allais Paradox show that individuals choose $B \succ A$ and $C \succ D$. The preference $C \succ D$ directly contradicts the implied choice $D \succ C$, proving a violation of the Axiom of Substitutability.
+
+---
+
+\section*{(d)}
+
+The utility function is given by $U(x) = -e^{-x/R}$.
+
+\subsection*{(i)}
+
+For Mary, $U(x) = -e^{-x/500}$:
+\begin{itemize}
+    \item \textbf{Option A:}
+    \[
+    U(500) = -e^{-500/500} = -e^{-1} \approx -0.3679
+    \]
+    \item \textbf{Option B:}
+    \begin{align*}
+    E[U] &= 0.60 \cdot U(5000) + 0.40 \cdot U(0) \\
+    &= 0.60 \left(-e^{-5000/500}\right) + 0.40 \left(-e^0\right) \\
+    &= 0.60 \left(-e^{-10}\right) - 0.40 \approx -0.4000
+    \end{align*}
+\end{itemize}
+Since $U(500) > E[U]$ (i.e., $-0.3679 > -0.4000$), Mary chooses Option A.
+
+\subsection*{(ii)}
+
+An individual is indifferent between Option 1 ($\$100$ certainty) and Option 2 ($50\%$ chance at $\$500$, $50\%$ chance at $\$0$) when:
+\[
+U(100) = 0.5 \cdot U(500) + 0.5 \cdot U(0)
+\]
+Substituting $U(x) = -e^{-x/R}$:
+\begin{align*}
+-e^{-100/R} &= 0.5\left(-e^{-500/R} - 1\right) \\[1ex]
+2e^{-100/R} &= e^{-500/R} + 1
+\end{align*}
+Let $y = e^{-100/R}$. Then $e^{-500/R} = y^5$, giving the polynomial:
+\[
+y^5 - 2y + 1 = 0 \implies (y - 1)(y^4 + y^3 + y^2 + y - 1) = 0
+\]
+Solving $y^4 + y^3 + y^2 + y - 1 = 0$ gives $y \approx 0.5188$.
+
+Solving for $R$:
+\[
+e^{-100/R} = 0.5188 \implies -\frac{100}{R} = \ln(0.5188) \implies R \approx 152
+\]
+
+\end{document}
