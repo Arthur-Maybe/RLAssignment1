@@ -1,2 +1,2 @@
-env
-_pycache_
+.venv/
+_pycache_/

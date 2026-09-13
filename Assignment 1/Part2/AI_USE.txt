@@ -1,0 +1,12 @@
+# AI USE Log
+
+AI Model: Gemini EDU
+
+Summary of Debugging Assistance
+    The AI Model was used to diagnose, troubleshoot, and highlight syntax and logic error within the scripts. It focused on:
+        Fixing immediate termination due to unwise initial state configuration
+        Clarifying action-state control flow
+
+Key Assistance
+    Modified reset() to initialize angles at safe positions so that each episode doesn't terminate from the start
+    

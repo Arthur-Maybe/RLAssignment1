@@ -23,8 +23,8 @@ def random_agent(env, num_episodes=3):
             done = terminated or truncated
 
             # Render the current state
-            #env.render()  # Render the current state
-            #print(f"--- Step {step_count:02d} | Action {action} | Step Reward: {reward:6.1f}")
+            env.render()  # Render the current state
+            print(f"--- Step {step_count:02d} | Action {action} | Step Reward: {reward:6.1f}")
 
         reason = "Collision/Success" if terminated else "Max Steps Reached"
         print(f"Episode {episode + 1} Finished in {step_count}steps | Total Reward: {total_reward} | Reason: {reason}\n")
