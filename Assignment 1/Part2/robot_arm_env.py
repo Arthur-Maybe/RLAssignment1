@@ -8,7 +8,7 @@ class RobotArmEnv(gym.Env):
     """
     metadata = {'render_modes': ['human', "ansi"]}
 
-    def __init__(self, render_mode=None):
+    def __init__(self, render_mode=None, max_steps=50):
         super().__init__()
 
         # Link lengths
@@ -37,10 +37,12 @@ class RobotArmEnv(gym.Env):
         self.observation_space = spaces.Box(low=low, high=high, dtype=np.float32)
 
         # Initialize state
-        self.theta1 = 0.0
-        self.theta2 = 0.0
+        self.theta1 = np.pi / 9
+        self.theta2 = np.pi / 9
         self.gripper_state = 0  # 0: open, 1: closed
         self.has_bolt = 0  # 0: no bolt, 1: has bolt
+        self.current_step = 0
+        self.max_steps = max_steps
 
         self.render_mode = render_mode
 
@@ -50,69 +52,91 @@ class RobotArmEnv(gym.Env):
     def _get_gripper_pos(self):
         """
         Calculate the position of the gripper based on the current joint angles.
-        Returns:
-            np.array: The (x, y) position of the gripper.
         """
         xg = self.d1 * np.cos(self.theta1) + self.d2 * np.cos(self.theta1 + self.theta2)
         yg = self.d1 * np.sin(self.theta1) + self.d2 * np.sin(self.theta1 + self.theta2)
         return np.array([xg, yg])
 
-def reset(self, seed=None, options=None):
-    super().reset(seed=seed)
+    def reset(self, seed=None, options=None):
+        super().reset(seed=seed)
 
-    # Initial starting angles
-    self.theta1 = 0.0
-    self.theta2 = 0.0
-    self.gripper_state = 0  # Open
-    self.has_bolt = 0  # No bolt
+        # Initial starting angles
+        self.theta1 = np.pi / 9
+        self.theta2 = np.pi / 9
+        self.gripper_state = 0  # Open
+        self.has_bolt = 0  # No bolt
+        self.current_step = 0
 
-    observation = self._get_obs()
-    info = {}
-    return observation, info
+        observation = self._get_obs()
+        info = {}
 
-def step(self, action):
-    # Unpack action choices
-    # action[0]: theta1 delta
-    # action[1]: theta2 delta
-    # action[2]: gripper state
-    d_theta1 = (action[0] - 1) * self.detal_theta  # -20, 0, +20 degrees
-    d_theta2 = (action[1] - 1) * self.detal_theta
-    new_gripper = action[2]
+        return observation, info
 
-    # Update joint angles with limits
-    self.theta1 = np.clip(self.theta1 + d_theta1, self.min_theta1, self.max_theta1)
-    self.theta2 = np.clip(self.theta2 + d_theta2, self.min_theta2, self.max_theta2)
-    self.gripper_state = new_gripper
+    def step(self, action):
+        self.current_step += 1
+        
+        # Unpack action choices
+        # action[0]: theta1 delta
+        # action[1]: theta2 delta
+        # action[2]: gripper state
+        d_theta1 = (action[0] - 1) * self.detal_theta  # -20, 0, +20 degrees
+        d_theta2 = (action[1] - 1) * self.detal_theta
+        new_gripper = action[2]
 
-    # Calculate gripper position
-    gripper_pos = self._get_gripper_pos()
+        # Update joint angles with limits
+        self.theta1 = np.clip(self.theta1 + d_theta1, self.min_theta1, self.max_theta1)
+        self.theta2 = np.clip(self.theta2 + d_theta2, self.min_theta2, self.max_theta2)
+        self.gripper_state = new_gripper
 
-    # Define pickup and target tolerances
-    pickup_tolerance = 0.1
+        # Calculate gripper position
+        gripper_pos = self._get_gripper_pos()
 
-    # Handle bolt pickup
-    if self.has_bolt == 0 and self.gripper_state == 1:  # Gripper closed
-        if np.linalg.norm(gripper_pos - self.bolt_pos) < pickup_tolerance:
-            self.has_bolt = 1  # Successfully picked up the bolt
+        # Define pickup and target tolerances
+        pickup_tolerance = 0.15
 
-    # If gripper opens while holding the bolt, drop it
-    if self.has_bolt == 1 and self.gripper_state == 0:  # Gripper opened
-        self.has_bolt = 0  # Drop the bolt
+        # Handle bolt pickup
+        if self.has_bolt == 0 and self.gripper_state == 1:  # Gripper closed
+            if np.linalg.norm(gripper_pos - self.bolt_pos) <= pickup_tolerance:
+                self.has_bolt = 1  # Successfully picked up the bolt
 
-    # Evaluate terminal conditions and rewards
-    reward = -1.0
-    terminated = False
+        # If gripper opens while holding the bolt, drop it
+        if self.has_bolt == 1 and self.gripper_state == 0:  # Gripper opened
+            self.has_bolt = 0  # Drop the bolt
 
-    # Successful placement condition
-    if self.has_bolt == 1 and np.linalg.norm(gripper_pos - self.hole_pos) < pickup_tolerance and self.gripper_state == 0:
-        reward = 10.0
-        terminated = True
-    # Collision condition
-    elif gripper_pos[0] == self.hole_pos[0] and gripper_pos[1] != self.hole_pos[1]:
-        reward = -100.0
-        terminated = True
+        # Evaluate terminal conditions and rewards
+        reward = -1.0
+        terminated = False
+        truncated = self.current_step >= self.max_steps
 
-    observation = self._get_obs()
-    info = {"gripper_pos": gripper_pos}
+        # Successful placement condition
+        if self.has_bolt == 1 and np.linalg.norm(gripper_pos - self.hole_pos) <= pickup_tolerance:
+            reward = 10.0
+            terminated = True
+        # Collision condition
+        elif (gripper_pos[0] >= self.hole_pos[0] or gripper_pos[1] <= 0.0) and not (np.linalg.norm(gripper_pos - self.hole_pos) <= pickup_tolerance):
+            reward = -100.0
+            terminated = True
 
-    return observation, reward, terminated, False, info
+        observation = self._get_obs()
+        info = {"gripper_pos": gripper_pos}
+
+        return observation, reward, terminated, truncated, info
+
+    def render(self):
+        """ 
+        Render the environment to the screen or return a string representation.
+        """
+        gripper_pos = self._get_gripper_pos()
+
+        status_str = (
+            f"01: {np.degrees(self.theta1):6.1f} deg, "
+            f"02: {np.degrees(self.theta2):6.1f} deg, "
+            f"Gripper: {gripper_pos[0]:.3f}, {gripper_pos[1]:.3f} "
+            f"Closed: {bool(self.gripper_state)}, "
+            f"Has Bolt: {bool(self.has_bolt)}"
+        )
+
+        if self.render_mode == "ansi":
+            return status_str
+        else:
+            print(f"[RENDER] {status_str}")
